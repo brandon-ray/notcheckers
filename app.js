@@ -22,13 +22,13 @@ const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const child_process = require('child_process');
-const port = 80;
+const port = 4000;
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-const teamLimit = 4;
+const teamLimit = 2;
 const width = 12;
 const height = 12;
 const boardBufferWidth = 4;
@@ -74,7 +74,7 @@ io.use((socket, next) => {
 let teamCache = {};
 let latestTeam = 1;
 io.on('connection', (socket) => {
-    let address = socket.handshake.address;
+    let address = socket.handshake.headers['x-real-ip'] ? socket.handshake.headers['x-real-ip'] : socket.handshake.address;
     if (address.startsWith('::ffff:')) {
         address = address.replace('::ffff:', '');
     }
@@ -126,7 +126,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat', (message) => {
-        socket.emit('chat', {
+        io.emit('chat', {
             user: socket.userState,
             message: message
         });
