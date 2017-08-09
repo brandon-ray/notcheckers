@@ -8,7 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font: 13px Helvetica, Arial; }
+        body {
+            overflow-x: hidden;
+            font: 13px Helvetica, Arial;
+        }
 
         .checker {
             width: 50px;
@@ -71,7 +74,11 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 </head>
 <body>
-<div class="text-center" id="login">
+<div id="loading" class="text-center">
+    <br><br>
+    <h3>Loading...</h3>
+</div>
+<div class="text-center" id="login" style="display:none;">
     <br><br>
     <div style="width:300px; margin-left:auto; margin-right:auto;">
         <form onsubmit="game.start(event)" class="well text-left" style="margin:1px;">
@@ -84,29 +91,38 @@
                 </div>
                 <button type="submit" class="btn btn-primary pull-right"><i class="fa fa-play"></i> Play</button>
                 <div class="form-group login-group-checkbox">
-                    <input type="checkbox" id="lg_remember" name="lg_remember">
-                    <label for="lg_remember">Remember?</label>
+                    <input type="checkbox" id="remember" name="remember" checked="checked">
+                    <label for="remember">Remember?</label>
                 </div>
             </div>
         </form>
     </div>
 </div>
-<div class="well no-select" id="game" style="display:none;">
+<div class="no-select" id="game" style="display:none;">
     <div class="row">
         <div class="col-md-6">
-            <div id="gameBoard"></div>
+            <div id="gameBoard" style="margin:2px;"></div>
         </div>
-        <div class="col-md-2"></div>
+        <div class="col-md-1"></div>
         <div class="col-md-4 text-left">
             <div id="userState">
                 <h2>Welcome to <b>Not</b> Checkers</h2>
                 <p>This looks like checkers but it really isn't. <i>Really.</i></p>
-                <br><br>
+                <p><button class="btn btn-primary btn-sm" onclick="game.signOut();">Sign Out</button></p>
+                <br>
                 <h3 id="teamTurn"></h3>
                 <h4 id="userTeam"></h4>
-                <br><br>
+                <br>
                 <h3>Scores</h3>
                 <div id="scores"></div>
+                <br>
+                <div>
+                    <div id="chat" class="well" style="height:250px; overflow-x:hidden; overflow-y:scroll;"></div>
+                    <form onsubmit="game.sendChat(event)">
+                        <input autocomplete="off" type="text" class="form-control" id="chatbox"
+                               placeholder="Press enter to chat">
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -116,20 +132,34 @@
 <script>
     var game = {};
 
-    game.start = function(event) {
-        event.preventDefault();
-        var name = $('#name').val();
-        console.log(name);
-        if (name && name.length > 4 && name.length < 50) {
-            init(name);
+    $(window).load(function() {
+        if (window.localStorage && window.localStorage.getItem('name')) {
+            init(window.localStorage.getItem('name'));
         } else {
-            alert('Invalid name, length must be greater than 4 and less than 50.');
+            $('#loading').hide();
+            $('#login').fadeIn();
         }
-    };
+
+        game.start = function(event) {
+            event.preventDefault();
+            var name = $('#name').val();
+            if (name && name.length > 2 && name.length < 50) {
+                var remember = $('#remember').val();
+                if (remember === 'on' && window.localStorage) {
+                    window.localStorage.setItem('name', name);
+                }
+                init(name);
+            } else {
+                alert('Invalid name, length must be greater than 2 and less than 50.');
+            }
+        };
+    });
 
     function init(name) {
+        var loaded = false;
+
         $('#login').hide();
-        $('#game').fadeIn();
+        $('#loading').fadeIn();
 
         var socket = io(window.href, {
             query: 'name=' + name
@@ -155,6 +185,14 @@
 
             $('#userTeam').html('You are on the <b style="color:' + teamColor + ';">' + teamColor + '</b> team.');
         });
+
+        game.signOut = function() {
+            if (window.localStorage) {
+                window.localStorage.clear();
+            }
+            $('#game').hide();
+            window.location.reload();
+        };
 
         game.selectChecker = function (val, x, y) {
             if (val === 0) {
@@ -248,7 +286,24 @@
             $('#scores').html(scoreHtml);
         };
 
+        game.sendChat = function(event) {
+            event.preventDefault();
+            var chatbox =  $('#chatbox');
+            socket.emit('chat', chatbox.val());
+            chatbox.val('');
+        };
+
+        socket.on('chat', function (data) {
+            var color = teams[data.user.team];
+            $('#chat').append('<div><b style="color:' + color + ';">' + data.user.name + '</b><b>:</b> ' + data.message + '</div>');
+        });
+
         socket.on('gameState', function (newGameState) {
+            if (!loaded) {
+                loaded = true;
+                $('#loading').hide();
+                $('#game').fadeIn();
+            }
             selected = null;
             gameState = newGameState;
             game.redrawBoard();

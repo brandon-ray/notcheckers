@@ -22,13 +22,13 @@ const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const child_process = require('child_process');
-const port = 3000;
+const port = 80;
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-const teamLimit = 2;
+const teamLimit = 4;
 const width = 12;
 const height = 12;
 const boardBufferWidth = 4;
@@ -63,7 +63,7 @@ function getGameState() {
 }
 
 io.use((socket, next) => {
-    if (socket.handshake.query && socket.handshake.query.name && socket.handshake.query.name.length > 4 && socket.handshake.query.name.length < 50) {
+    if (socket.handshake.query && socket.handshake.query.name && socket.handshake.query.name.length > 2 && socket.handshake.query.name.length < 50) {
         socket.name = socket.handshake.query.name;
         next();
     } else {
@@ -110,13 +110,27 @@ io.on('connection', (socket) => {
 
     socket.userState = {
         team: team,
-        name: ''
+        name: socket.name
     };
 
     console.log('Client connected:', address, socket.userState.team, socket.name);
 
     socket.emit('userState', socket.userState);
     io.emit('gameState', getGameState());
+    socket.emit('chat', {
+        user: {
+            team: 0,
+            name: 'Server'
+        },
+        message: 'Welcome to Not Checkers!'
+    });
+
+    socket.on('chat', (message) => {
+        socket.emit('chat', {
+            user: socket.userState,
+            message: message
+        });
+    });
 
     socket.on('move', (data) => {
         if (data.selected && data.to && socket.userState.team === teamTurn && board[data.to.y][data.to.x] === 0) {
