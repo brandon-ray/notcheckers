@@ -1,3 +1,5 @@
+'use strict';
+
 [
     ['warn',  '\x1b[33m'],
     ['error', '\x1b[31m'],
@@ -22,7 +24,7 @@ const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const child_process = require('child_process');
-const port = 4000;
+const port = 80;
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
@@ -62,6 +64,56 @@ function getGameState() {
     }
 }
 
+function nextTurn() {
+    let teamCounts = {};
+    for (let y = 0; y < board.length; y++) {
+        let row = board[y];
+        for (let x = 0; x < row.length; x++) {
+            let val = row[x];
+            if (teamCounts[val]) {
+                teamCounts[val]++;
+            } else {
+                teamCounts[val] = 1;
+            }
+        }
+    }
+
+    let check = true;
+    let limit = 0;
+    while (check) {
+        teamTurn++;
+        if (teamTurn > teamLimit) {
+            teamTurn = 1;
+        }
+
+        if (teamCounts[teamTurn] > 0) {
+            check = false;
+        }
+
+        limit++;
+        if (limit > teamLimit) {
+            check = false;
+        }
+    }
+
+    for (let i=0; i<Object.keys(teamCounts).length; i++) {
+        let team = Object.keys(teamCounts)[i];
+        let count = teamCounts[team];
+        if (count === 1) {
+            for (let y = 0; y < board.length; y++) {
+                let row = board[y];
+                for (let x = 0; x < row.length; x++) {
+                    let val = row[x];
+                    if (val == team) {
+                        board[y][x] = 0;
+                    }
+                }
+            }
+            io.emit('eliminated', team);
+        }
+    }
+}
+
 io.use((socket, next) => {
     if (socket.handshake.query && socket.handshake.query.name && socket.handshake.query.name.length > 2 && socket.handshake.query.name.length < 50) {
         socket.name = socket.handshake.query.name;
@@ -91,7 +143,7 @@ io.on('connection', (socket) => {
         io.emit('gameState', getGameState());
     });
 
-    var team = 0;
+    let team = 0;
     if (teamCache[address]) {
         team = teamCache[address];
     } else {
@@ -126,6 +178,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat', (message) => {
+        if (!message || !message.length || message.length > 500) {
+            return;
+        }
+
         io.emit('chat', {
             user: socket.userState,
             message: message
@@ -135,32 +191,32 @@ io.on('connection', (socket) => {
     socket.on('move', (data) => {
         if (data.selected && data.to && socket.userState.team === teamTurn && board[data.to.y][data.to.x] === 0) {
             if (board[data.selected.y][data.selected.x] === socket.userState.team) {
-                var jumped = false;
-                var xdist = Math.abs(data.selected.x - data.to.x);
-                var ydist = Math.abs(data.selected.y - data.to.y);
+                let jumped = false;
+                let xdist = Math.abs(data.selected.x - data.to.x);
+                let ydist = Math.abs(data.selected.y - data.to.y);
 
                 if (xdist <= 1 && ydist <= 1) {
                     //Valid move.
                 } else if (xdist === 2 && ydist === 0) {
-                    var dx = (data.selected.x - data.to.x)/2;
-                    var val = board[data.to.y][data.to.x + dx];
+                    let dx = (data.selected.x - data.to.x)/2;
+                    let val = board[data.to.y][data.to.x + dx];
                     if (val === 0) {
                         return;
                     }
                     jumped = true;
                     board[data.to.y][data.to.x + dx] = 0;
                 } else if (xdist === 0 && ydist === 2) {
-                    var dy = (data.selected.y - data.to.y)/2;
-                    var val = board[data.to.y + dy][data.to.x];
+                    let dy = (data.selected.y - data.to.y)/2;
+                    let val = board[data.to.y + dy][data.to.x];
                     if (val === 0) {
                         return;
                     }
                     jumped = true;
                     board[data.to.y + dy][data.to.x] = 0;
                 } else if (xdist === 2 && ydist === 2) {
-                    var dx = (data.selected.x - data.to.x)/2;
-                    var dy = (data.selected.y - data.to.y)/2;
-                    var val = board[data.to.y + dy][data.to.x + dx];
+                    let dx = (data.selected.x - data.to.x)/2;
+                    let dy = (data.selected.y - data.to.y)/2;
+                    let val = board[data.to.y + dy][data.to.x + dx];
                     if (val === 0) {
                         return;
                     }
@@ -174,10 +230,7 @@ io.on('connection', (socket) => {
                 board[data.to.y][data.to.x] = socket.userState.team;
 
                 if (!jumped) {
-                    teamTurn++;
-                    if (teamTurn > teamLimit) {
-                        teamTurn = 1;
-                    }
+                    nextTurn();
                 }
 
                 io.emit('gameState', getGameState());

@@ -11,6 +11,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "brandon@bombsightgames.com",
+  "license": "ISC",
+  "repository": "https://github.com/brandon-ray/notcheckers.git"
 }

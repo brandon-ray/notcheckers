@@ -17,6 +17,8 @@
             width: 50px;
             height: 50px;
             border-radius: 1000px;
+            text-align: center;
+            font-size: 32px;
         }
 
         .selected {
@@ -132,6 +134,10 @@
 <script>
     var game = {};
 
+    function htmlEncode(str) {
+        return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
     $(window).load(function() {
         if (window.localStorage && window.localStorage.getItem('name')) {
             init(window.localStorage.getItem('name'));
@@ -170,6 +176,11 @@
         var selected = null;
         socket.on('connection', function () {
             console.log('Websocket connected.');
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Websocket disconnected.');
+            game.addChat(0, 'Server', 'Disconnected from server.');
         });
 
         var teams = {
@@ -242,7 +253,11 @@
                         }
                         html += '<div class="checker ' + selectedClass + ' checker-' + val + '">&nbsp;</div>';
                     } else {
-                        html += '<div class="checker checker-' + val + '">&nbsp;</div>';
+                        if (val === 0) {
+                            html += '<div class="checker">&nbsp;</div>';
+                        } else {
+                            html += '<div class="checker checker-' + val + '">&nbsp;</div>';
+                        }
                     }
                     html += '</td>';
                 }
@@ -276,7 +291,7 @@
                 for (var k = 0; k < Object.keys(gameState.users).length; k++) {
                     var user = gameState.users[Object.keys(gameState.users)[k]];
                     if (user.team == score.team) {
-                        userList += user.name + ' ';
+                        userList += htmlEncode(user.name) + ' ';
                     }
                 }
 
@@ -293,10 +308,19 @@
             chatbox.val('');
         };
 
+        game.addChat = function(color, name, message) {
+            $('#chat').append('<div><b style="color:' + color + ';">' + name + '</b><b>:</b> ' + message + '</div>');
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        };
+
+        socket.on('eliminated', function (team) {
+            var teamColor = teams[team];
+            game.addChat(0, 'Server', 'Team <b style="color:' + teamColor + ';">' + teamColor + '</b> was eliminated.');
+        });
+
         socket.on('chat', function (data) {
             var color = teams[data.user.team];
-            $('#chat').append('<div><b style="color:' + color + ';">' + data.user.name + '</b><b>:</b> ' + data.message + '</div>');
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
+            game.addChat(color, htmlEncode(data.user.name), htmlEncode(data.message));
         });
 
         socket.on('gameState', function (newGameState) {
