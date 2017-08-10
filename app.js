@@ -144,7 +144,7 @@ io.on('connection', (socket) => {
                 } else if (xdist === 2 && ydist === 0) {
                     var dx = (data.selected.x - data.to.x)/2;
                     var val = board[data.to.y][data.to.x + dx];
-                    if (val === 0 || val === socket.userState.team) {
+                    if (val === 0) {
                         return;
                     }
                     jumped = true;
@@ -152,7 +152,7 @@ io.on('connection', (socket) => {
                 } else if (xdist === 0 && ydist === 2) {
                     var dy = (data.selected.y - data.to.y)/2;
                     var val = board[data.to.y + dy][data.to.x];
-                    if (val === 0 || val === socket.userState.team) {
+                    if (val === 0) {
                         return;
                     }
                     jumped = true;
@@ -161,7 +161,7 @@ io.on('connection', (socket) => {
                     var dx = (data.selected.x - data.to.x)/2;
                     var dy = (data.selected.y - data.to.y)/2;
                     var val = board[data.to.y + dy][data.to.x + dx];
-                    if (val === 0 || val === socket.userState.team) {
+                    if (val === 0) {
                         return;
                     }
                     jumped = true;

@@ -73,7 +73,7 @@
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 </head>
-<body>
+<body id="body">
 <div id="loading" class="text-center">
     <br><br>
     <h3>Loading...</h3>
@@ -296,6 +296,7 @@
         socket.on('chat', function (data) {
             var color = teams[data.user.team];
             $('#chat').append('<div><b style="color:' + color + ';">' + data.user.name + '</b><b>:</b> ' + data.message + '</div>');
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
         });
 
         socket.on('gameState', function (newGameState) {
@@ -309,8 +310,10 @@
             game.redrawBoard();
 
             if (gameState.teamTurn === userState.team) {
+                $('#body').css('background-color', '#D3FFD3');
                 $('#teamTurn').html('It is <b style="color:' + teamColor + ';">your</b> team\'s turn.');
             } else {
+                $('#body').css('background-color', '#FFFFFF');
                 var turnColor = teams[gameState.teamTurn];
                 $('#teamTurn').html('It is the <b style="color:' + turnColor + ';">' + turnColor + '</b> team\'s turn.');
             }
