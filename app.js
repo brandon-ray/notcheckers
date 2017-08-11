@@ -20,17 +20,17 @@ process.on('unhandledRejection', (err) => {
     process.exit(1);
 });
 
-const app = require('express')();
+const config = require('./config');
+const express = require('express');
+const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const child_process = require('child_process');
-const port = 80;
+const port = config.port;
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+app.use(express.static('public'));
 
-const teamLimit = 2;
+const teamLimit = config.teams;
 const width = 12;
 const height = 12;
 const boardBufferWidth = 4;

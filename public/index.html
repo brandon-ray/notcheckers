@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+    <title>Not Checkers</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow-x: hidden;
+            font: 13px Helvetica, Arial;
+        }
+
+        .checker {
+            width: 50px;
+            height: 50px;
+            border-radius: 1000px;
+            text-align: center;
+            font-size: 32px;
+        }
+
+        .selected {
+            border: 4px solid yellow;
+        }
+
+        .clickable {
+            cursor: pointer;
+        }
+
+        .checker-1 {
+            background-color: red;
+        }
+
+        .checker-2 {
+            background-color: black;
+        }
+
+        .checker-3 {
+            background-color: blue;
+        }
+
+        .checker-4 {
+            background-color: green;
+        }
+
+        .no-select {
+            user-select: none;
+            -o-user-select:none;
+            -moz-user-select: none;
+            -khtml-user-select: none;
+            -webkit-user-select: none;
+        }
+
+        table {
+            border: 1px solid black;
+            padding: 0;
+            margin: 0;
+        }
+
+        tr td
+        {
+            background-color: #fff;
+            width: 50px;
+            height: 50px;
+        }
+
+        tr:nth-child(even) td:nth-child(odd),
+        tr:nth-child(odd) td:nth-child(even)
+        {
+            background-color: #ccc;
+        }
+    </style>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body id="body">
+<div id="loading" class="text-center">
+    <br><br>
+    <h3>Loading...</h3>
+</div>
+<div class="text-center" id="login" style="display:none;">
+    <br><br>
+    <div style="width:300px; margin-left:auto; margin-right:auto;">
+        <form onsubmit="game.start(event)" class="well text-left" style="margin:1px;">
+            <h2 class="text-center"><b>Not</b> Checkers</h2>
+            <br>
+            <div class="login-group">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="Name" required="required">
+                </div>
+                <button type="submit" class="btn btn-primary pull-right"><i class="fa fa-play"></i> Play</button>
+                <div class="form-group login-group-checkbox">
+                    <input type="checkbox" id="remember" name="remember" checked="checked">
+                    <label for="remember">Remember?</label>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="no-select" id="game" style="display:none;">
+    <div class="row">
+        <div class="col-md-6">
+            <div id="gameBoard" style="margin:2px;"></div>
+        </div>
+        <div class="col-md-1"></div>
+        <div class="col-md-4 text-left">
+            <div id="userState">
+                <h2>Welcome to <b>Not</b> Checkers</h2>
+                <p>This looks like checkers but it really isn't. <i>Really.</i></p>
+                <p><button class="btn btn-primary btn-sm" onclick="game.signOut();">Sign Out</button></p>
+                <br>
+                <h3 id="teamTurn"></h3>
+                <h4 id="userTeam"></h4>
+                <br>
+                <h3>Scores</h3>
+                <div id="scores"></div>
+                <br>
+                <div>
+                    <div id="chat" class="well" style="height:250px; overflow-x:hidden; overflow-y:scroll;"></div>
+                    <form onsubmit="game.sendChat(event)">
+                        <input autocomplete="off" type="text" class="form-control" id="chatbox"
+                               placeholder="Press enter to chat">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script src="/game.js"></script>
+</body>
+</html>
