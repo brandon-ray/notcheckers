@@ -233,7 +233,12 @@ io.on('connection', (socket) => {
                     nextTurn();
                 }
 
-                io.emit('gameState', getGameState());
+                let state = getGameState();
+                state.move = {
+                    from: data.selected,
+                    to: data.to
+                };
+                io.emit('gameState', state);
             }
         }
     });

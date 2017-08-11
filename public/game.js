@@ -1,3 +1,4 @@
+'use strict';
 var game = {};
 
 function htmlEncode(str) {
@@ -37,6 +38,7 @@ function init(name) {
         query: 'name=' + name
     });
     var gameState = {};
+    var lastGameState = {};
     var userState = {};
     var teamColor = null;
     var selected = null;
@@ -81,10 +83,10 @@ function init(name) {
                         y: y
                     }
                 });
-            }
 
-            selected = null;
-            game.redrawBoard();
+                selected = null;
+                game.redrawBoard();
+            }
         } else {
             if (gameState.teamTurn === userState.team && val === userState.team) {
                 selected = {
@@ -112,18 +114,17 @@ function init(name) {
                 }
 
                 html += '<td onclick="game.selectChecker(' + val + ',' + x + ',' + y + ')">';
-                if (val === userState.team) {
-                    var selectedClass = '';
-                    if (selected && x === selected.x && y === selected.y) {
-                        selectedClass = 'selected';
-                    }
-                    html += '<div class="checker ' + selectedClass + ' checker-' + val + '">&nbsp;</div>';
+                if (val === 0) {
+                    html += '<div class="checker">&nbsp;</div>';
                 } else {
-                    if (val === 0) {
-                        html += '<div class="checker">&nbsp;</div>';
-                    } else {
-                        html += '<div class="checker checker-' + val + '">&nbsp;</div>';
+                    var selectedClass = '';
+                    if (gameState.teamTurn === userState.team && val === userState.team) {
+                        selectedClass += ' clickable';
                     }
+                    if (selected && x === selected.x && y === selected.y) {
+                        selectedClass += ' selected';
+                    }
+                    html += '<div id="checker-' + x + '-' + y + '" class="checker ' + selectedClass + ' checker-' + val + '">&nbsp;</div>';
                 }
                 html += '</td>';
             }
@@ -175,8 +176,9 @@ function init(name) {
     };
 
     game.addChat = function(color, name, message) {
-        $('#chat').append('<div><b style="color:' + color + ';">' + name + '</b><b>:</b> ' + message + '</div>');
-        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        var chat = $('#chat');
+        chat.append('<div><b style="color:' + color + ';">' + name + '</b><b>:</b> ' + message + '</div>');
+        chat.scrollTop(chat[0].scrollHeight);
     };
 
     socket.on('eliminated', function (team) {
@@ -196,8 +198,46 @@ function init(name) {
             $('#game').fadeIn();
         }
         selected = null;
+        lastGameState = gameState;
         gameState = newGameState;
+
+        /*
+        if (gameState.move) {
+            var val = gameState.board[gameState.move.to.y][gameState.move.to.x];
+            gameState.board[gameState.move.to.y][gameState.move.to.x] = 0;
+            gameState.board[gameState.move.from.y][gameState.move.from.x] = val;
+
+            delete gameState.move;
+        }
+        */
+
         game.redrawBoard();
+
+        var cellSize = 50;
+        if (gameState.move) {
+            var checker = $('#checker-' + gameState.move.to.x + '-' + gameState.move.to.y);
+            var oldPos = {
+                x: gameState.move.from.x * cellSize,
+                y: gameState.move.from.y * cellSize
+            };
+            var newPos = {
+                x: gameState.move.to.x * cellSize,
+                y: gameState.move.to.y * cellSize
+            };
+
+            checker.css({
+                position: 'relative',
+                top: oldPos.y - newPos.y,
+                left: oldPos.x - newPos.x
+            });
+
+            checker.animate({
+                position: 'relative',
+                top: 0,
+                left: 0
+            });
+        }
+
 
         if (gameState.teamTurn === userState.team) {
             $('#body').css('background-color', '#D3FFD3');
