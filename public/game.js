@@ -37,6 +37,7 @@ function init(name) {
     var socket = io(window.href, {
         query: 'name=' + name
     });
+    var lobbyState = {};
     var gameState = {};
     var lastGameState = {};
     var userState = {};
@@ -158,7 +159,7 @@ function init(name) {
             for (var k = 0; k < Object.keys(gameState.users).length; k++) {
                 var user = gameState.users[Object.keys(gameState.users)[k]];
                 if (user.team == score.team) {
-                    userList += htmlEncode(user.name) + ' ';
+                    userList += htmlEncode(user.name) + ' | ';
                 }
             }
 
@@ -191,25 +192,60 @@ function init(name) {
         game.addChat(color, htmlEncode(data.user.name), htmlEncode(data.message));
     });
 
+    socket.on('alert', function (message) {
+        alert(message);
+    });
+
+    game.startNewGame = function() {
+        $('#lobby').hide();
+        $('#loading').fadeIn();
+
+        socket.emit('newGame');
+    };
+
+    game.showRules = function() {
+
+    };
+
+    game.joinGame = function(id) {
+        socket.emit('joinGame', id);
+    };
+
+    game.redrawLobby = function() {
+        if (lobbyState.games.length) {
+            var html = '';
+            for (var i=0; i<lobbyState.games.length; i++) {
+                var game = lobbyState.games[i];
+                html += '<div class="well"><div style="margin-top:5px;" class="pull-right">' +
+                    '<button onclick="game.joinGame(\'' + game.id + '\')" class="btn btn-sm btn-primary" ' + (game.players >= game.maxPlayers ? 'disabled="disabled"' : '') + '>Join Game</button></div> ' +
+                    '<h4>' + game.name + ' (' + game.players + '/' + game.maxPlayers + ')</h4></div>';
+            }
+            $('#lobbyGames').html(html);
+        } else {
+            $('#lobbyGames').html('<h3 class="text-center">No games currently active.</h3>');
+        }
+    };
+
+    socket.on('lobbyState', function (newLobbyState) {
+        $('#body').css('background-color', '#FFFFFF');
+        $('#game').hide();
+        $('#loading').hide();
+        $('#lobby').fadeIn();
+        lobbyState = newLobbyState;
+        game.redrawLobby();
+        loaded = false;
+    });
+
     socket.on('gameState', function (newGameState) {
         if (!loaded) {
             loaded = true;
             $('#loading').hide();
+            $('#lobby').hide();
             $('#game').fadeIn();
         }
         selected = null;
         lastGameState = gameState;
         gameState = newGameState;
-
-        /*
-        if (gameState.move) {
-            var val = gameState.board[gameState.move.to.y][gameState.move.to.x];
-            gameState.board[gameState.move.to.y][gameState.move.to.x] = 0;
-            gameState.board[gameState.move.from.y][gameState.move.from.x] = val;
-
-            delete gameState.move;
-        }
-        */
 
         game.redrawBoard();
 

@@ -91,13 +91,38 @@
                     <label for="name">Name</label>
                     <input type="text" class="form-control" id="name" name="name" placeholder="Name" required="required">
                 </div>
-                <button type="submit" class="btn btn-primary pull-right"><i class="fa fa-play"></i> Play</button>
+                <button type="submit" class="btn btn-success pull-right"><i class="fa fa-play"></i> Play</button>
                 <div class="form-group login-group-checkbox">
                     <input type="checkbox" id="remember" name="remember" checked="checked">
                     <label for="remember">Remember?</label>
                 </div>
             </div>
         </form>
+    </div>
+</div>
+<div class="no-select container" id="lobby" style="display:none;">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>
+                <b>Not</b> Checkers
+                <span class="pull-right">
+                    <button class="btn btn-primary btn-sm" onclick="game.showRules();"><i class="fa fa-list"></i> Rules</button>
+                    <button class="btn btn-primary btn-sm" onclick="game.signOut();"><i class="fa fa-sign-out"></i> Sign Out</button>
+                </span>
+            </h2>
+            <small style="position:relative; top:-16px;">This looks like checkers but it really isn't. <i>Really.</i></small>
+            <div class="text-center">
+                <button class="btn btn-success">
+                    <i class="fa fa-play"></i> Join a Random Game
+                </button>
+                &nbsp;&nbsp;
+                <button class="btn btn-primary" onclick="game.startNewGame();">
+                    <i class="fa fa-plus"></i> Start a New Game
+                </button>
+            </div>
+            <br>
+            <div id="lobbyGames"></div>
+        </div>
     </div>
 </div>
 <div class="no-select" id="game" style="display:none;">
@@ -110,7 +135,11 @@
             <div id="userState">
                 <h2>Welcome to <b>Not</b> Checkers</h2>
                 <p>This looks like checkers but it really isn't. <i>Really.</i></p>
-                <p><button class="btn btn-primary btn-sm" onclick="game.signOut();">Sign Out</button></p>
+                <p>
+                    <button class="btn btn-primary btn-sm" onclick="game.showRules();"><i class="fa fa-list"></i> Rules</button>
+                    <button class="btn btn-primary btn-sm" onclick="game.quit();"><i class="fa fa-close"></i> Disconnect</button>
+                    <button class="btn btn-primary btn-sm" onclick="game.signOut();"><i class="fa fa-sign-out"></i> Sign Out</button>
+                </p>
                 <br>
                 <h3 id="teamTurn"></h3>
                 <h4 id="userTeam"></h4>
