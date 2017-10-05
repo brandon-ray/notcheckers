@@ -21,6 +21,15 @@ $(window).load(function() {
             if (remember === 'on' && window.localStorage) {
                 window.localStorage.setItem('name', name);
             }
+
+            if (window.ga) {
+                ga('send', {
+                    hitType: 'event',
+                    eventCategory: 'Lobby',
+                    eventAction: 'signIn'
+                });
+            }
+
             init(name);
         } else {
             $.bootstrapGrowl('Invalid name, length must be greater than 2 and less than 50.', {type: 'danger'});
@@ -68,12 +77,29 @@ function init(name) {
 
     game.quit = function() {
         window.location.reload();
+
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Game',
+                eventAction: 'disconnect'
+            });
+        }
     };
 
     game.signOut = function() {
         if (window.localStorage) {
             window.localStorage.clear();
         }
+
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Lobby',
+                eventAction: 'signOut'
+            });
+        }
+
         $('#game').hide();
         window.location.reload();
     };
@@ -178,6 +204,14 @@ function init(name) {
         var chatbox =  $('#chatbox');
         socket.emit('chat', chatbox.val());
         chatbox.val('');
+
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Game',
+                eventAction: 'sendChat'
+            });
+        }
     };
 
     game.addChat = function(color, name, message) {
@@ -213,14 +247,36 @@ function init(name) {
         socket.emit('newGame', {
             maxPlayers: $('#maxPlayers').val()
         });
+
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Lobby',
+                eventAction: 'gameStart'
+            });
+        }
     };
 
     game.joinGame = function(id) {
         socket.emit('joinGame', id);
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Lobby',
+                eventAction: 'gameJoin'
+            });
+        }
     };
 
     game.joinRandomGame = function() {
         socket.emit('joinRandomGame');
+        if (window.ga) {
+            ga('send', {
+                hitType: 'event',
+                eventCategory: 'Lobby',
+                eventAction: 'gameJoinRandom'
+            });
+        }
     };
 
     game.redrawLobby = function() {

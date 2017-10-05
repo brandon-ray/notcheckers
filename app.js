@@ -75,7 +75,7 @@ function nextTurn(game) {
             game.teamTurn = 1;
         }
 
-        if (teamCounts[game.teamTurn] > 0) {
+        if (teamCounts[game.teamTurn] > 1) {
             check = false;
         }
 
