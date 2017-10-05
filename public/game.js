@@ -355,4 +355,32 @@ function init(name) {
             $('#teamTurn').html('It is the <b style="color:' + turnColor + ';">' + turnColor + '</b> team\'s turn.');
         }
     });
+
+    var idleTime = 0;
+    $(document).ready(function() {
+        setInterval(function timerIncrement() {
+            if (socket.connected) {
+                idleTime = idleTime + 1;
+                if (idleTime === 4) {
+                    $.bootstrapGrowl('You will be kicked for inactivity in one minute.', {type: 'danger'});
+                } else if (idleTime >= 5) {
+                    socket.disconnect();
+                    $('#lobby').hide();
+                    $('#game').hide();
+
+                    var loadingElement = $('#loading');
+                    loadingElement.fadeIn();
+                    loadingElement.html('<h2 class="text-center">You were kicked for being inactive.</h2>');
+                }
+            }
+        }, 60000);
+
+        $(this).mousemove(function() {
+            idleTime = 0;
+        });
+
+        $(this).keypress(function() {
+            idleTime = 0;
+        });
+    });
 }
