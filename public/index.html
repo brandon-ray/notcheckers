@@ -72,8 +72,8 @@
             background-color: #ccc;
         }
     </style>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/flatly.bootstrap.min.css">
 </head>
 <body id="body">
 <div id="loading" class="text-center">
@@ -106,37 +106,38 @@
             <h2>
                 <b>Not</b> Checkers
                 <span class="pull-right">
-                    <button class="btn btn-primary btn-sm" onclick="game.showRules();"><i class="fa fa-list"></i> Rules</button>
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#rulesModal"><i class="fa fa-list"></i> Rules</button>
                     <button class="btn btn-primary btn-sm" onclick="game.signOut();"><i class="fa fa-sign-out"></i> Sign Out</button>
                 </span>
             </h2>
             <small style="position:relative; top:-16px;">This looks like checkers but it really isn't. <i>Really.</i></small>
             <div class="text-center">
-                <button class="btn btn-success">
+                <button class="btn btn-success" onclick="game.joinRandomGame();">
                     <i class="fa fa-play"></i> Join a Random Game
                 </button>
                 &nbsp;&nbsp;
-                <button class="btn btn-primary" onclick="game.startNewGame();">
+                <button class="btn btn-primary" data-toggle="modal" data-target="#newGameModal">
                     <i class="fa fa-plus"></i> Start a New Game
                 </button>
             </div>
             <br>
+            <div class="text-center"><span id="playerCount">1</span> Players Online</div>
             <div id="lobbyGames"></div>
         </div>
     </div>
 </div>
-<div class="no-select" id="game" style="display:none;">
+<div class="no-select container" id="game" style="display:none;">
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-7">
+            <br><br>
             <div id="gameBoard" style="margin:2px;"></div>
         </div>
-        <div class="col-md-1"></div>
         <div class="col-md-4 text-left">
             <div id="userState">
-                <h2>Welcome to <b>Not</b> Checkers</h2>
+                <h2><b>Not</b> Checkers</h2>
                 <p>This looks like checkers but it really isn't. <i>Really.</i></p>
                 <p>
-                    <button class="btn btn-primary btn-sm" onclick="game.showRules();"><i class="fa fa-list"></i> Rules</button>
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#rulesModal"><i class="fa fa-list"></i> Rules</button>
                     <button class="btn btn-primary btn-sm" onclick="game.quit();"><i class="fa fa-close"></i> Disconnect</button>
                     <button class="btn btn-primary btn-sm" onclick="game.signOut();"><i class="fa fa-sign-out"></i> Sign Out</button>
                 </p>
@@ -158,8 +159,63 @@
         </div>
     </div>
 </div>
+
+<div id="newGameModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><i class="fa fa-close"></i></button>
+                <h4 class="modal-title"><i class="fa fa-plus"></i>&nbsp;&nbsp;Start a New Game</h4>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="maxPlayers">Max Players:</label>
+                    <select class="form-control" id="maxPlayers">
+                        <option value="2_players">2 Players</option>
+                        <option value="3_players">3 Players</option>
+                        <option value="4_players">4 Players</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="pull-left btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" data-dismiss="modal" onclick="game.startNewGame();">
+                    <i class="fa fa-play"></i>&nbsp;&nbsp;Start Game
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="rulesModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><i class="fa fa-close"></i></button>
+                <h4 class="modal-title"><i class="fa fa-list"></i>&nbsp;&nbsp;<b>Not</b> Checkers Game Rules</h4>
+            </div>
+            <div class="modal-body">
+                <p>This game can be boiled down to a few simple rules:</p>
+                <ol style="padding-left:10px;">
+                    <li>This is <b>not</b> checkers.</li>
+                    <li>Pieces can move in any direction.</li>
+                    <li>Players can jump any piece including their own.</li>
+                    <li>When you jump any piece, you get an extra turn.</li>
+                    <li>A player will be eliminated when they have one or less pieces on the board.</li>
+                    <li>The last player with pieces on the board wins.</li>
+                </ol>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-growl/1.0.0/jquery.bootstrap-growl.min.js"></script>
 <script src="/game.js"></script>
 </body>
 </html>

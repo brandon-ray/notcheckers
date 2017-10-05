@@ -25,19 +25,26 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const child_process = require('child_process');
 const port = config.port;
 
 app.use(express.static('public'));
 
-const teamLimit = config.teams;
 const width = 12;
 const height = 12;
 const boardBufferWidth = 4;
 const boardBufferHeight = 2;
 
-function nextTurn(game) {
+function getTeamCounts(game) {
+    if (!game.playing) {
+        return false;
+    }
+
     let teamCounts = {};
+
+    for (let i=1; i<game.maxPlayers; i++) {
+        teamCounts[i] = 0;
+    }
+
     for (let y = 0; y < game.board.length; y++) {
         let row = game.board[y];
         for (let x = 0; x < row.length; x++) {
@@ -50,11 +57,21 @@ function nextTurn(game) {
         }
     }
 
+    return teamCounts;
+}
+
+function nextTurn(game) {
+    if (!game.playing) {
+        return false;
+    }
+
+    let teamCounts = getTeamCounts(game);
+
     let check = true;
     let limit = 0;
     while (check) {
         game.teamTurn++;
-        if (game.teamTurn > teamLimit) {
+        if (game.teamTurn > game.maxPlayers) {
             game.teamTurn = 1;
         }
 
@@ -63,15 +80,27 @@ function nextTurn(game) {
         }
 
         limit++;
-        if (limit > teamLimit*5) {
+        if (limit > game.maxPlayers*5) {
             check = false;
         }
     }
 
-    for (let i=0; i<Object.keys(teamCounts).length; i++) {
-        let team = Object.keys(teamCounts)[i];
+    checkGameStatus(game, teamCounts);
+}
+
+function checkGameStatus(game, teamCounts) {
+    if (!game.playing) {
+        return false;
+    }
+
+    if (!teamCounts) {
+        teamCounts = getTeamCounts(game);
+    }
+
+    for (let team=1; team<=game.maxPlayers; team++) {
+        let teamData = game.teamData[team];
         let count = teamCounts[team];
-        if (count === 1) {
+        if (!teamData.eliminated && count <= 1) {
             for (let y = 0; y < game.board.length; y++) {
                 let row = game.board[y];
                 for (let x = 0; x < row.length; x++) {
@@ -81,8 +110,43 @@ function nextTurn(game) {
                     }
                 }
             }
+
+            teamData.eliminated = true;
             io.to('game:' + game.id).emit('eliminated', team);
+
+            checkWinConditions(game);
         }
+    }
+}
+
+function checkWinConditions(game) {
+    if (!game.playing) {
+        return false;
+    }
+
+    let eliminatedCount = 0;
+    let winner = 0;
+    for (let team=1; team<=game.maxPlayers; team++) {
+        let teamData = game.teamData[team];
+        if (teamData.eliminated) {
+            eliminatedCount++;
+        } else {
+            winner = team;
+        }
+    }
+
+    if (eliminatedCount >= game.maxPlayers-1) {
+        game.playing = false;
+        io.to('game:' + game.id).emit('winner', winner);
+
+        setTimeout(function() {
+            let newGame = startNewGame(game.name, game.id, game.startData);
+
+            for (let i=0; i<game.users.length; i++) {
+                let socket = io.sockets.connected[game.users[i].id];
+                joinGame(socket, newGame.id, true);
+            }
+        }, 10000);
     }
 }
 
@@ -96,27 +160,36 @@ io.use((socket, next) => {
 });
 
 let games = {};
-function startNewGame(socket) {
+function startNewGame(name, existingId, data) {
     let game = {
-        id: parseInt(Math.random()*10000000),
-        name: socket.name + '\'s Game',
+        id: existingId ? existingId : parseInt(Math.random()*10000000),
+        name: name,
+        playing: true,
         users: [],
-        maxPlayers: 2,
-        latestTeam: 1,
+        teamSlots: {},
+        teamData: {},
+        maxPlayers: data.maxPlayers,
         teamTurn: 1,
-        board: []
+        board: [],
+        startData: data
     };
+
+    for (let i=0; i<game.maxPlayers; i++) {
+        game.teamData[i+1] = {
+            eliminated: false
+        };
+    }
 
     for (let y=0; y<height; y++) {
         let row = [];
         for (let x=0; x<width; x++) {
-            if (teamLimit > 0 && y < boardBufferHeight && x >= boardBufferWidth && x < width-boardBufferWidth) {
+            if (game.maxPlayers > 0 && y < boardBufferHeight && x >= boardBufferWidth && x < width-boardBufferWidth) {
                 row.push(1);
-            } else if (teamLimit > 1 && y >= height-boardBufferHeight && x >= boardBufferWidth && x < width-boardBufferWidth) {
+            } else if (game.maxPlayers > 1 && y >= height-boardBufferHeight && x >= boardBufferWidth && x < width-boardBufferWidth) {
                 row.push(2);
-            } else if (teamLimit > 2 && x < boardBufferHeight && y >= boardBufferWidth && y < height-boardBufferWidth) {
+            } else if (game.maxPlayers > 2 && x < boardBufferHeight && y >= boardBufferWidth && y < height-boardBufferWidth) {
                 row.push(3);
-            } else if (teamLimit > 3 && x >= width-boardBufferHeight && y >= boardBufferWidth && y < height-boardBufferWidth) {
+            } else if (game.maxPlayers > 3 && x >= width-boardBufferHeight && y >= boardBufferWidth && y < height-boardBufferWidth) {
                 row.push(4);
             } else {
                 row.push(0);
@@ -127,7 +200,7 @@ function startNewGame(socket) {
 
     games[game.id] = game;
 
-    joinGame(socket, game.id);
+    return game;
 }
 
 function getGameState(game) {
@@ -138,7 +211,7 @@ function getGameState(game) {
     };
 }
 
-function joinGame(socket, gameId) {
+function joinGame(socket, gameId, restarted) {
     let game = games[gameId];
     if (!game) {
         return false;
@@ -148,10 +221,13 @@ function joinGame(socket, gameId) {
         return false;
     }
 
-    let team = game.latestTeam;
-    game.latestTeam++;
-    if (game.latestTeam > teamLimit) {
-        game.latestTeam = 1;
+    let team = 1;
+    for (let i=0; i<game.maxPlayers; i++) {
+        if (!game.teamSlots[i+1]) {
+            team = i+1;
+            game.teamSlots[team] = true;
+            break;
+        }
     }
 
     socket.game = game.id;
@@ -160,26 +236,36 @@ function joinGame(socket, gameId) {
         name: socket.name
     };
 
-    io.to('game:' + game.id).emit('chat', {
-        user: {
-            team: 0,
-            name: 'Server'
-        },
-        message: socket.name + ' has joined the game.'
+    if (!restarted) {
+        io.to('game:' + game.id).emit('chat', {
+            user: {
+                team: 0,
+                name: 'Server'
+            },
+            message: socket.name + ' has joined the game.'
+        });
+    }
+
+    game.users.push({
+        id: socket.id,
+        name: socket.name,
+        team: team
     });
 
-    game.users.push(socket.id);
     socket.leave('lobby');
     socket.join('game:' + game.id);
     socket.emit('userState', socket.userState);
     io.to('game:' + game.id).emit('gameState', getGameState(game));
-    socket.emit('chat', {
-        user: {
-            team: 0,
-            name: 'Server'
-        },
-        message: 'Welcome to Not Checkers!'
-    });
+
+    if (!restarted) {
+        socket.emit('chat', {
+            user: {
+                team: 0,
+                name: 'Server'
+            },
+            message: 'Welcome to Not Checkers!'
+        });
+    }
 
     io.to('lobby').emit('lobbyState', getLobbyState());
 }
@@ -193,9 +279,11 @@ function leaveGame(socket, gameId) {
     socket.leave('game:' + game.id);
     socket.join('lobby');
 
+    game.teamSlots[socket.userState.team] = false;
+
     for (let i=0; i<game.users.length; i++) {
-        var user = game.users[i];
-        if (user === socket.id) {
+        let user = game.users[i];
+        if (user.id === socket.id) {
             game.users.splice(i, 1);
             break;
         }
@@ -203,9 +291,18 @@ function leaveGame(socket, gameId) {
 
     if (game.users.length <= 0) {
         delete games[game.id];
+    } else {
+        io.to('game:' + game.id).emit('chat', {
+            user: {
+                team: 0,
+                name: 'Server'
+            },
+            message: socket.name + ' has left the game.'
+        });
     }
 
     io.to('lobby').emit('lobbyState', getLobbyState());
+    io.to('game:' + game.id).emit('gameState', getGameState(game));
 }
 
 function getLobbyState() {
@@ -220,8 +317,9 @@ function getLobbyState() {
             maxPlayers: game.maxPlayers
         });
     }
+
     return {
-        clientCount: io.sockets.sockets.length,
+        clientCount: io.engine.clientsCount,
         games: lobbyGames
     };
 }
@@ -242,11 +340,29 @@ io.on('connection', (socket) => {
     socket.join('lobby');
     socket.emit('lobbyState', getLobbyState());
 
-    socket.on('newGame', () => {
+    socket.on('newGame', (data) => {
         if (socket.game) {
             return false;
         }
-        startNewGame(socket);
+
+        let startData = {
+            maxPlayers: 2
+        };
+
+        switch (data.maxPlayers) {
+            case '2_players':
+                startData.maxPlayers = 2;
+                break;
+            case '3_players':
+                startData.maxPlayers = 3;
+                break;
+            case '4_players':
+                startData.maxPlayers = 4;
+                break;
+        }
+
+        let game = startNewGame(socket.name + '\'s Game', null, startData);
+        joinGame(socket, game.id);
     });
 
     socket.on('joinGame', (gameId) => {
@@ -256,12 +372,34 @@ io.on('connection', (socket) => {
         joinGame(socket, gameId);
     });
 
+    socket.on('joinRandomGame', () => {
+        if (socket.game) {
+            return false;
+        }
+
+        let foundGame = null;
+        let gameIds = Object.keys(games);
+        for (let i=0; i<gameIds.length; i++) {
+            let game = games[gameIds[i]];
+            if (game.users.length < game.maxPlayers) {
+                foundGame = game;
+                break;
+            }
+        }
+
+        if (foundGame) {
+            joinGame(socket, foundGame.id);
+        } else {
+            socket.emit('alert', 'Could not find any open games to join, try starting a new game.');
+        }
+    });
+
     socket.on('chat', (message) => {
         if (!message || !message.length || message.length > 500) {
             return;
         }
 
-        var game = games[socket.game];
+        let game = games[socket.game];
         if (!game) {
             return false;
         }

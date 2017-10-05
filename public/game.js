@@ -23,7 +23,7 @@ $(window).load(function() {
             }
             init(name);
         } else {
-            alert('Invalid name, length must be greater than 2 and less than 50.');
+            $.bootstrapGrowl('Invalid name, length must be greater than 2 and less than 50.', {type: 'danger'});
         }
     };
 });
@@ -65,6 +65,10 @@ function init(name) {
 
         $('#userTeam').html('You are on the <b style="color:' + teamColor + ';">' + teamColor + '</b> team.');
     });
+
+    game.quit = function() {
+        window.location.reload();
+    };
 
     game.signOut = function() {
         if (window.localStorage) {
@@ -159,7 +163,7 @@ function init(name) {
             for (var k = 0; k < Object.keys(gameState.users).length; k++) {
                 var user = gameState.users[Object.keys(gameState.users)[k]];
                 if (user.team == score.team) {
-                    userList += htmlEncode(user.name) + ' | ';
+                    userList += htmlEncode(user.name);
                 }
             }
 
@@ -182,6 +186,12 @@ function init(name) {
         chat.scrollTop(chat[0].scrollHeight);
     };
 
+    socket.on('winner', function (team) {
+        var teamColor = teams[team];
+        game.addChat(0, 'Server', 'Team <b style="color:' + teamColor + ';">' + teamColor + '</b> has won the game!');
+        game.addChat(0, 'Server', 'Restarting the game in 10 seconds...');
+    });
+
     socket.on('eliminated', function (team) {
         var teamColor = teams[team];
         game.addChat(0, 'Server', 'Team <b style="color:' + teamColor + ';">' + teamColor + '</b> was eliminated.');
@@ -193,25 +203,28 @@ function init(name) {
     });
 
     socket.on('alert', function (message) {
-        alert(message);
+        $.bootstrapGrowl(message, {type: 'danger'});
     });
 
     game.startNewGame = function() {
         $('#lobby').hide();
         $('#loading').fadeIn();
 
-        socket.emit('newGame');
-    };
-
-    game.showRules = function() {
-
+        socket.emit('newGame', {
+            maxPlayers: $('#maxPlayers').val()
+        });
     };
 
     game.joinGame = function(id) {
         socket.emit('joinGame', id);
     };
 
+    game.joinRandomGame = function() {
+        socket.emit('joinRandomGame');
+    };
+
     game.redrawLobby = function() {
+        $('#playerCount').html(lobbyState.clientCount);
         if (lobbyState.games.length) {
             var html = '';
             for (var i=0; i<lobbyState.games.length; i++) {
@@ -242,7 +255,9 @@ function init(name) {
             $('#loading').hide();
             $('#lobby').hide();
             $('#game').fadeIn();
+            $('#chat').html('');
         }
+
         selected = null;
         lastGameState = gameState;
         gameState = newGameState;
