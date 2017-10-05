@@ -390,7 +390,10 @@ io.on('connection', (socket) => {
         if (foundGame) {
             joinGame(socket, foundGame.id);
         } else {
-            socket.emit('alert', 'Could not find any open games to join, try starting a new game.');
+            let game = startNewGame(socket.name + '\'s Game', null, {
+                maxPlayers: 2
+            });
+            joinGame(socket, game.id);
         }
     });
 
