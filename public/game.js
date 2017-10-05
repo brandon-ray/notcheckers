@@ -216,7 +216,7 @@ function init(name) {
 
     game.addChat = function(color, name, message) {
         var chat = $('#chat');
-        chat.append('<div><b style="color:' + color + ';">' + name + '</b><b>:</b> ' + message + '</div>');
+        chat.append('<div><b style="color:' + color + ';">' + htmlEncode(name) + '</b><b>:</b> ' + message + '</div>');
         chat.scrollTop(chat[0].scrollHeight);
     };
 
@@ -287,7 +287,7 @@ function init(name) {
                 var game = lobbyState.games[i];
                 html += '<div class="well"><div style="margin-top:5px;" class="pull-right">' +
                     '<button onclick="game.joinGame(\'' + game.id + '\')" class="btn btn-sm btn-primary" ' + (game.players >= game.maxPlayers ? 'disabled="disabled"' : '') + '>Join Game</button></div> ' +
-                    '<h4>' + game.name + ' (' + game.players + '/' + game.maxPlayers + ')</h4></div>';
+                    '<h4>' + htmlEncode(game.name) + ' (' + game.players + '/' + game.maxPlayers + ')</h4></div>';
             }
             $('#lobbyGames').html(html);
         } else {
