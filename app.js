@@ -142,9 +142,17 @@ function checkWinConditions(game) {
         setTimeout(function() {
             let newGame = startNewGame(game.name, game.id, game.startData);
 
+            let stillConnected = false;
             for (let i=0; i<game.users.length; i++) {
                 let socket = io.sockets.connected[game.users[i].id];
-                joinGame(socket, newGame.id, true);
+                if (socket && socket.connected) {
+                    stillConnected = true;
+                    joinGame(socket, newGame.id, true);
+                }
+            }
+
+            if (!stillConnected) {
+                destroyGame(newGame.id);
             }
         }, 10000);
     }
@@ -290,7 +298,7 @@ function leaveGame(socket, gameId) {
     }
 
     if (game.users.length <= 0) {
-        delete games[game.id];
+        destroyGame(game.id);
     } else {
         io.to('game:' + game.id).emit('chat', {
             user: {
@@ -303,6 +311,15 @@ function leaveGame(socket, gameId) {
 
     io.to('lobby').emit('lobbyState', getLobbyState());
     io.to('game:' + game.id).emit('gameState', getGameState(game));
+}
+
+function destroyGame(gameId) {
+    let game = games[gameId];
+    if (!game) {
+        return false;
+    }
+
+    delete games[game.id];
 }
 
 function getLobbyState() {
