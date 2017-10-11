@@ -15,10 +15,23 @@
     <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html {
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
         body {
-            overflow-x: hidden;
-            font: 13px Helvetica, Arial;
+            position: relative;
+            margin: 0;
+            padding-bottom: 6rem;
+            min-height: 100%;
+            font-family: "Helvetica Neue", Arial, sans-serif;
         }
 
         .checker {
@@ -79,6 +92,16 @@
         {
             background-color: #ccc;
         }
+
+        .footer {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: 1rem;
+            background-color: #efefef;
+            text-align: center;
+        }
     </style>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/css/flatly.bootstrap.min.css">
@@ -94,6 +117,25 @@
     </script>
 </head>
 <body id="body">
+<div id="aboutModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><i class="fa fa-close"></i></button>
+                <h4 class="modal-title"><i class="fa fa-list"></i>&nbsp;&nbsp; About <b>Not</b> Checkers</h4>
+            </div>
+            <div class="modal-body">
+                <p>Not Checkers is a multiplayer twist on the classic game of Checkers with up to four players. You must sacrifice your pieces to win.</p>
+                <p>This game is currently in development, please report any bugs you find.</p>
+                <br>
+                <p>Not Checkers is owned and developed by <a href="https://bombsightgames.com/" target="_blank">Bombsight Games</a>. We can be contacted there or by emailing <a href="mailto:contact@bombsightgames.com">contact@bombsightgames.com</a>.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="loading" class="text-center">
     <br><br>
     <h3>Loading...</h3>
@@ -228,6 +270,16 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="footer">
+    <a href="#" data-toggle="modal" data-target="#aboutModal">About</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://bombsightgames.com/legal/tos" target="_blank">Terms of Service</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://bombsightgames.com/legal/privacy_policy" target="_blank">Privacy Policy</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="https://bombsightgames.com/legal/cookie_policy" target="_blank">Cookie Policy</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="http://iogames.space" target="_blank">More Games</a>
+    <br>
+    Copyright © 2017 <a href="https://bombsightgames.com/" target="_blank">Bombsight Games</a>. All Rights Reserved.
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
